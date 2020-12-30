@@ -11,8 +11,8 @@ keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
 keywords = ["Climate Change"]
 
 #Used to create number on file name
-number_of_news_sites = 3
-file_counter = [0] * number_of_news_sites
+number_of_news_sites = 4
+file_counter = [-1] * number_of_news_sites
 
 
 #Skim Articles
@@ -85,16 +85,38 @@ def read_articles(urls):
             try:
                 for remove in textdiv.find_all("div"):
                     remove.decompose()
-                    text = textdiv.find_all("p")
+                text = textdiv.find_all("p")
             except:
-                pass
-
+                continue #if ths runs there is an error textdiv doesn't exit
+                
 
             article = ""
             for i in text:
                 article += i.get_text()
+
+            date = soup.find("div", {"class" : "date-simple"}).get_text()
             
-            date = soup.find("div", {"class": "date-simple"}).get_text()
+
+        elif (url[1] == "British Broadcasting Company"):
+            date_url = "".join(url[0]).split("*")
+            url[0] = date_url[0]
+
+            r = requests.get(url[0])
+            soup = BeautifulSoup(r.content, "html.parser")
+
+            #from search can not tell if text based news or video. If a url fails any of these tests it is a news video
+            try:
+                file_index = 3
+                file_counter[file_index] += 1
+                headline = soup.find("h1", {"id": "main-heading"}).get_text()
+                author = soup.find("p", {"class": "css-1pjc44v-Contributor e5xb54n0"}).find("strong").get_text()[3:]  
+                text = soup.find_all("div", {"data-component": "text-block"})
+                article = ""
+                for i in text:
+                    article += i.get_text()
+            except:
+                continue
+
 
         csv_values = ["".join(headline), "".join(article).replace("\n", ""), "".join(author), url[2], "".join(url[0]), "".join(date), url[3]]
         filename = "ScrappedArticles/{}{}.csv".format(url[1], file_counter[file_index])
@@ -203,10 +225,9 @@ for keyword in keywords:
         page += 1
         changed = 0
 
-        r = requests.get("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))        
+        r = requests.get("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))      
+        print("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))  
         soup = BeautifulSoup(r.content, "html.parser")
-
-        print("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))
 
         #Handles cases where there are no articles on page 
         try:
@@ -216,13 +237,13 @@ for keyword in keywords:
 
         for i in article_containers:
             if ("2020" in i.text):
-                url_text = "" + i.find("a").get("href")
-                if (not "news" in url_text):
+                changed = 1
+                date = i.find("span", {"class": "css-1hizfh0-MetadataSnippet ecn1o5v0"}).find("span", {"aria-hidden": "false"}).get_text()
+                url_text = "{}*{}".format(i.find("a").get("href"), date)
+                if (not "news" in url_text or "newsround" in url_text):
                     continue
-                url = [i.find("a").get("href"), "British Broadcasting Company", keyword, "bbc.co.uk"]
-                print(i.find("a").get("href"))
+                url = [url_text, "British Broadcasting Company", keyword, "bbc.co.uk"]
                 if url not in urls:
-                    changed = 1
                     urls.append(url)
 
 read_articles(urls)
