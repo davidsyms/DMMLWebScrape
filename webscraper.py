@@ -24,31 +24,48 @@ def read_articles(urls):
 
         if (url[1] == "Ceasefire"):
             file_index = 0
+            file_counter[file_index] += 1
             
-            date_unstripped = soup.find("div", {"class": "column_main"}).find("i").get_text()
-            date = date_unstripped[14: date_unstripped[2:].find("-")+1]
-
             headline = soup.find("h1", {"itemprop": "name headline"}).get_text()
-            
+
             #Removes all children div's this included the extra links at bottom of article 
             textdiv = soup.find("div", {"id": "entry"})
             for remove in textdiv.find_all("div"):
                 remove.decompose()
             text = textdiv.find_all("p")
-            
-            author = text[0].get_text()[3:]
 
             article = ""
             for i in text[1:]:
                 article += i.get_text()
 
-            file_counter[file_index] += 1
+            author = text[0].get_text()[3:]
+
+            date_unstripped = soup.find("div", {"class": "column_main"}).find("i").get_text()
+            date = date_unstripped[14: date_unstripped[2:].find("-")+1]    
+
     
         elif (url[1] == "Canadian Dimension"):
             file_index = 1
             file_counter[file_index] += 1
 
-        csv_values = ["".join(headline), "".join(article), "".join(author), url[2], "".join(url[0]), "".join(date)]
+            headline = soup.find("h1", {"class": "article-title"}).get_text()
+
+            author_date_line = soup.find("p", {"class", "byline"}).get_text().split("/")
+
+            author = author_date_line[0]
+
+            textdiv = soup.find("div", {"class": "content"})
+            for remove in textdiv.find_all("div"):
+                remove.decompose()
+            text = textdiv.find_all("p")
+
+            article = ""
+            for i in text:
+                article += i.get_text()
+
+            date = author_date_line[1]
+
+        csv_values = ["".join(headline), "".join(article).replace("\n", ""), "".join(author), url[2], "".join(url[0]), "".join(date)]
         filename = "ScrappedArticles/{}{}.csv".format(url[1], file_counter[file_index])
 
         print(filename)
@@ -62,7 +79,7 @@ def read_articles(urls):
 for keyword in keywords:
     urls = []
 
-    """#############################################################################################
+    #############################################################################################
     #                                  Ceasefire                                                #
     #############################################################################################
 
