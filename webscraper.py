@@ -8,9 +8,10 @@ import csv
 
 headers = ["Headline", "Body", "Author", "Topic label", "URL of the news article", "Published date", "Domain"]
 keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
+keywords = ["Climate Change"]
 
 #Used to create number on file name
-number_of_news_sites = 2
+number_of_news_sites = 3
 file_counter = [0] * number_of_news_sites
 
 
@@ -70,7 +71,32 @@ def read_articles(urls):
 
             date = author_date_line[1]
 
-        csv_values = ["".join(headline), "".join(article).replace("\n", ""), "".join(author), url[2], "".join(url[0]), "".join(date)]
+        elif (url[1] == "Al Jazeera"):
+            file_index = 2
+            file_counter[file_index] += 1
+            
+            headline = soup.find("h1").get_text()
+
+            author = "No Author"
+
+            textdiv = soup.find("div", {"class": "wysiwyg wysiwyg--all-content"})
+            
+            #Removes all children div's this included the extra links at bottom of article 
+            try:
+                for remove in textdiv.find_all("div"):
+                    remove.decompose()
+                    text = textdiv.find_all("p")
+            except:
+                pass
+
+
+            article = ""
+            for i in text:
+                article += i.get_text()
+            
+            date = soup.find("div", {"class": "date-simple"}).get_text()
+
+        csv_values = ["".join(headline), "".join(article).replace("\n", ""), "".join(author), url[2], "".join(url[0]), "".join(date), url[3]]
         filename = "ScrappedArticles/{}{}.csv".format(url[1], file_counter[file_index])
 
         print("Writing: {}".format(filename))
@@ -80,11 +106,11 @@ def read_articles(urls):
             csvwriter.writerow(headers) 
             csvwriter.writerow(csv_values)
 
+urls = []
 
 for keyword in keywords:
-    urls = []
 
-    """#############################################################################################
+    #############################################################################################
     #                                  Ceasefire                                                #
     #############################################################################################
     print("Scanning Ceasefire for {}".format(keyword))
@@ -98,7 +124,7 @@ for keyword in keywords:
     
     for i in article_containers:
         if ("2020" in i.find("h2").find("i").contents[0]):
-            urls.append([i.find("h1").find("a").get("href"), "Ceasefire", keyword])"""
+            urls.append([i.find("h1").find("a").get("href"), "Ceasefire", keyword, "ceasefiremagazine.co.uk"])
 
     #############################################################################################
     #                                  Canadian Dimension                                       #
@@ -106,7 +132,7 @@ for keyword in keywords:
     #           loop to iteratively search each "next" page until no articles from 2020 are     #
     #           found                                                                           #
     #############################################################################################
-    """print("Scanning Canadian Dimension for {}".format(keyword))
+    print("Scanning Canadian Dimension for {}".format(keyword))
 
     web_address = ""
     page = 0
@@ -124,8 +150,6 @@ for keyword in keywords:
         elif (keyword == "Military Ground Vehicles"):
             web_address = "https://canadiandimension.com/search/973c007b780e3452f8d8b15a63648590/P{}0".format(page)
 
-        print(web_address)
-
         r = requests.get(web_address)
         soup = BeautifulSoup(r.content, "html.parser")
 
@@ -137,10 +161,9 @@ for keyword in keywords:
 
         for i in article_containers:
             if ("2020" in i.text):
-                urls.append([i.find("a").get("href"), "Canadian Dimension", keyword])
+                urls.append([i.find("a").get("href"), "Canadian Dimension", keyword, "canadiandimension.com"])
                 changed = 1
                 page += 1
-    """
 
     #############################################################################################
     #                                  Al Jazeera                                               #
@@ -156,8 +179,6 @@ for keyword in keywords:
         r = requests.get("https://www.aljazeera.com/search/{}?page={}".format(keyword, page).replace(" ", "%20"))        
         soup = BeautifulSoup(r.content, "html.parser")
 
-        print("https://www.aljazeera.com/search/{}?page={}".format(keyword, page).replace(" ", "%20"))
-
         #Handles cases where there are no articles on page 
         try:
             article_containers = soup.find_all("article")
@@ -166,16 +187,14 @@ for keyword in keywords:
 
         for i in article_containers:
             if ("2020" in i.text):
-                url = [i.find("a").get("href"), "Al Jazeera", keyword]
+                url = [i.find("a").get("href"), "Al Jazeera", keyword, aljazeera.com]
                 if url not in urls:
                     changed = 1
-                if (changed):
                     urls.append(url)
-                print(i.find("a").get("href"))
 
         
 
-    #read_articles(urls)
+read_articles(urls)
 
 
 
