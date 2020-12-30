@@ -98,6 +98,7 @@ def read_articles(urls):
             
 
         elif (url[1] == "British Broadcasting Company"):
+            #save url that has date and updates the real url[0] again.
             date_url = "".join(url[0]).split("*")
             url[0] = date_url[0]
 
@@ -239,6 +240,8 @@ for keyword in keywords:
             if ("2020" in i.text):
                 changed = 1
                 date = i.find("span", {"class": "css-1hizfh0-MetadataSnippet ecn1o5v0"}).find("span", {"aria-hidden": "false"}).get_text()
+                
+                #Since in article if it is recent it will say "2 days ago" instead of the date, so I pass the date from search page to article scrapper
                 url_text = "{}*{}".format(i.find("a").get("href"), date)
                 if (not "news" in url_text or "newsround" in url_text):
                     continue
