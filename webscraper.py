@@ -2,19 +2,29 @@ from bs4 import BeautifulSoup
 import requests
 import csv
 
+#############################################################################################
+#                               Global Variable Declarations                                #
+#############################################################################################
+
 headers = ["Headline", "Body", "Author", "Topic label", "URL of the news article", "Published date", "Domain"]
 keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
+
+number_of_news_sites = 2
+file_counter = [0] * number_of_news_sites
 
 
 #Skim Articles
 def read_articles(urls):
-    j = 0
+    file_index = -1
+
     for url in urls:
         r = requests.get(url[0])
         soup = BeautifulSoup(r.content, "html.parser")
         headline, article, author, date = "", "", "", ""
 
         if (url[1] == "Ceasefire"):
+            file_index = 0
+            
             date_unstripped = soup.find("div", {"class": "column_main"}).find("i").get_text()
             date = date_unstripped[14: date_unstripped[2:].find("-")+1]
 
@@ -31,25 +41,28 @@ def read_articles(urls):
             article = ""
             for i in text[1:]:
                 article += i.get_text()
+
+            file_counter[file_index] += 1
     
-        if (url[1] == "Canadian Dimension"):
-            null = 0
+        elif (url[1] == "Canadian Dimension"):
+            file_index = 1
+            file_counter[file_index] += 1
 
         csv_values = ["".join(headline), "".join(article), "".join(author), url[2], "".join(url[0]), "".join(date)]
-        filename = "ScrappedArticles/{}{}.csv".format(url[1], j)
+        filename = "ScrappedArticles/{}{}.csv".format(url[1], file_counter[file_index])
 
+        print(filename)
 
         with open(filename, 'w') as file: 
             csvwriter = csv.writer(file) 
             csvwriter.writerow(headers) 
             csvwriter.writerow(csv_values)
 
-        j += 1
 
 for keyword in keywords:
     urls = []
 
-    #############################################################################################
+    """#############################################################################################
     #                                  Ceasefire                                                #
     #############################################################################################
 
@@ -62,8 +75,7 @@ for keyword in keywords:
     
     for i in article_containers:
         if ("2020" in i.find("h2").find("i").contents[0]):
-            print()
-            #urls.append([i.find("h1").find("a").get("href"), "Ceasefire", keyword])
+            #urls.append([i.find("h1").find("a").get("href"), "Ceasefire", keyword])"""
 
     #############################################################################################
     #                                  Canadian Dimension                                       #
@@ -72,34 +84,35 @@ for keyword in keywords:
     #           found                                                                           #
     #############################################################################################
     
-    search_string = ""
-    page_string = "" #will hold what page # scraper is at.
+    web_address = ""
+    page = 0
     changed = 1
-    while (changed == 1):
-        print("Looped")    
+    while (changed):
         changed = 0
+
         if (keyword == "Climate Change"):
-            search_string = "70dec0af9355c68c34ec5e27e957b6d8{}".format(page_string)
-        if (keyword == "COVID 19"):
-            search_string = "2cc0ddf8f7107fdaef2509b0e785876f{}".format(page_string)
-        if (keyword == "Military Ground Vehicles"):
-            search_string = "973c007b780e3452f8d8b15a63648590{}".format(page_string)
-        
-        r = requests.get("https://canadiandimension.com/search/{}".format(search_string))
+            web_address = "https://canadiandimension.com/articles/category/environment/P{}0".format(page)
+        elif (keyword == "COVID 19"):
+            web_address = "https://canadiandimension.com/articles/category/covid-19/P{}0".format(page)
+        elif (keyword == "Military Ground Vehicles"):
+            web_address = "https://canadiandimension.com/search/973c007b780e3452f8d8b15a63648590/P{}0".format(page)
+
+        r = requests.get(web_address)
         soup = BeautifulSoup(r.content, "html.parser")
 
         try:
-            article_containers = soup.find("ol", {"class": "search-results"}).find_all("li")
+            article_containers = soup.find_all("li")
         except:
             article_containers = []
 
         for i in article_containers:
             if ("2020" in i.text):
-                urls.append([i.find("small").find("a").get("href"), "Canadian Dimension", keyword])
+                urls.append([i.find("a").get("href"), "Canadian Dimension", keyword])
                 changed = 1
+                page += 1
 
         
-
+    print(urls)
     read_articles(urls)
 
 
