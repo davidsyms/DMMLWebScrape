@@ -110,7 +110,7 @@ urls = []
 
 for keyword in keywords:
 
-    #############################################################################################
+    """#############################################################################################
     #                                  Ceasefire                                                #
     #############################################################################################
     print("Scanning Ceasefire for {}".format(keyword))
@@ -187,12 +187,43 @@ for keyword in keywords:
 
         for i in article_containers:
             if ("2020" in i.text):
-                url = [i.find("a").get("href"), "Al Jazeera", keyword, aljazeera.com]
+                url = [i.find("a").get("href"), "Al Jazeera", keyword, "aljazeera.com"]
+                if url not in urls:
+                    changed = 1
+                    urls.append(url)"""
+
+    #############################################################################################
+    #                                  BBC                                                      #
+    #############################################################################################
+    print("Scanning BBC for {}".format(keyword))
+
+    page = 0
+    changed = 1
+    while (changed):
+        page += 1
+        changed = 0
+
+        r = requests.get("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))        
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        print("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))
+
+        #Handles cases where there are no articles on page 
+        try:
+            article_containers = soup.find("ul", {"class": "css-1lb37cz-Stack e1y4nx260"}).find_all("li")
+        except:
+            article_containers = []
+
+        for i in article_containers:
+            if ("2020" in i.text):
+                url_text = "" + i.find("a").get("href")
+                if (not "news" in url_text):
+                    continue
+                url = [i.find("a").get("href"), "British Broadcasting Company", keyword, "bbc.co.uk"]
+                print(i.find("a").get("href"))
                 if url not in urls:
                     changed = 1
                     urls.append(url)
-
-        
 
 read_articles(urls)
 
