@@ -8,10 +8,9 @@ import csv
 
 headers = ["Headline", "Body", "Author", "Topic label", "URL of the news article", "Published date", "Domain"]
 keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
-keywords = ["Climate Change"]
 
 #Used to create number on file name
-number_of_news_sites = 4
+number_of_news_sites = 5
 file_counter = [-1] * number_of_news_sites
 
 
@@ -109,17 +108,56 @@ def read_articles(urls):
             try:
                 file_index = 3
                 file_counter[file_index] += 1
+
                 headline = soup.find("h1", {"id": "main-heading"}).get_text()
+
                 author = soup.find("p", {"class": "css-1pjc44v-Contributor e5xb54n0"}).find("strong").get_text()[3:]  
+
                 text = soup.find_all("div", {"data-component": "text-block"})
                 article = ""
+
+                date = date_url[1]
+
                 for i in text:
                     article += i.get_text()
+
             except:
                 continue
 
+        elif (url[1] == "France 24"):
+            r = requests.get(url[0], headers={'User-Agent': 'Mozilla/5.0'})
+            soup = BeautifulSoup(r.content, "html.parser")
 
-        csv_values = ["".join(headline), "".join(article).replace("\n", ""), "".join(author), url[2], "".join(url[0]), "".join(date), url[3]]
+            file_index = 4
+            file_counter[file_index] += 1
+
+            headline = soup.find("h1", {"class": "t-content__title a-page-title"}).get_text()
+
+            try: 
+                author = soup.find("a", {"class": "m-from-author__name"}).get_text()
+            except:
+                author = "No Author"
+
+            textdiv = soup.find("div", {"class": "t-content__body u-clearfix"})
+            
+            #Removes all children div's this included the extra links at bottom of article 
+            try:
+                for remove in textdiv.find_all("div"):
+                    remove.decompose()
+                text = textdiv.find_all("p")
+            except:
+                continue #if ths runs there is an error textdiv doesn't exit
+
+            article = ""
+            for i in text:
+                article += i.text
+
+
+            date = soup.find("time").get_text()[:10]
+
+            
+
+        csv_values = [" ".join(headline.split()), " ".join(article.split()), " ".join(author.split()), url[2], "".join(url[0]), "".join(date), url[3]]
         filename = "ScrappedArticles/{}{}.csv".format(url[1], file_counter[file_index])
 
         print("Writing: {}".format(filename))
@@ -213,7 +251,7 @@ for keyword in keywords:
                 url = [i.find("a").get("href"), "Al Jazeera", keyword, "aljazeera.com"]
                 if url not in urls:
                     changed = 1
-                    urls.append(url)"""
+                    urls.append(url)
 
     #############################################################################################
     #                                  BBC                                                      #
@@ -238,7 +276,6 @@ for keyword in keywords:
 
         for i in article_containers:
             if ("2020" in i.text):
-                changed = 1
                 date = i.find("span", {"class": "css-1hizfh0-MetadataSnippet ecn1o5v0"}).find("span", {"aria-hidden": "false"}).get_text()
                 
                 #Since in article if it is recent it will say "2 days ago" instead of the date, so I pass the date from search page to article scrapper
@@ -247,7 +284,56 @@ for keyword in keywords:
                     continue
                 url = [url_text, "British Broadcasting Company", keyword, "bbc.co.uk"]
                 if url not in urls:
-                    urls.append(url)
+                    changed = 1
+                    urls.append(url)"""
+    
+    #############################################################################################
+    #                                 France 24                                                 #
+    #   Notes:  This new site does not have search, Instead I used the corona virus, climate,   #
+    #            and war tags                                                                   #
+    #############################################################################################
+    print("Scanning France24 for {}".format(keyword))
+
+    web_address = ""
+    page = 0
+    changed = 1
+    while (changed):
+        page += 1
+        changed = 0
+
+        if (keyword == "Climate Change"):
+            if (page > 1):
+                web_address = "https://www.france24.com/en/tag/climate/{}/".format(page)
+            else:
+                web_address = "https://www.france24.com/en/tag/climate/"
+        elif (keyword == "COVID 19"):
+            if (page > 1):
+                web_address = "https://www.france24.com/en/tag/coronavirus/{}/".format(page)
+            else:
+                web_address = "https://www.france24.com/en/tag/coronavirus/"
+        elif (keyword == "Military Ground Vehicles"):
+            if (page > 1):
+                web_address = "https://www.france24.com/en/tag/war/{}/".format(page)
+            else:
+                web_address = "https://www.france24.com/en/tag/war/"
+
+        print(web_address)
+
+        r = requests.get(web_address, headers={'User-Agent': 'Mozilla/5.0'})
+        soup = BeautifulSoup(r.content, "html.parser")
+        #Handles cases where there are no articles on page 
+
+        article_containers = soup.find_all("div", {"class": "m-item-list-article"})
+
+        for i in article_containers:
+            if ("2020" in i.text):
+                url_text = "https://www.france24.com{}".format(i.find("a").get("href"))
+                if "tv-shows" not in url_text and "video" not in url_text:
+                    urls.append(["https://www.france24.com{}".format(i.find("a").get("href")), "France 24", keyword, "france24.com"])
+                changed = 1
+
+
+
 
 read_articles(urls)
 
