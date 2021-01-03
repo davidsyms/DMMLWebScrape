@@ -19,8 +19,6 @@ Global Times: http://www.globaltimes.cn
 
 21st Century Wire: https://21stcenturywire.com
 
-American Free Press: https://americanfreepress.net
-
 
 Due to the fact that these pages use javascript to update pages with the next new articles instead of loading a new page.
 
@@ -57,3 +55,7 @@ To add additional sites that follow the newssite.com/search/page1 to newssite.co
 3. Filter articles for dates in 2020 and scrape the assosiated URL
 
 For a good example of implimentation of a new site see the implimentation for Canadian Dimension. 
+
+-----------------------------TO ADD-----------------------------
+
+American Free Press: https://americanfreepress.net
