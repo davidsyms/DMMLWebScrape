@@ -10,9 +10,16 @@ headers = ["Headline", "Body", "Author", "Topic label", "URL of the news article
 keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
 
 #Used to create number on file name
-number_of_news_sites = 5
-file_counter = [-1] * number_of_news_sites
+news_sites = ["Ceasefire", "Canadian Dimension", "Al Jazeera", "British Broadcasting Company", "Taipei Times", "France 24", "Times of India",
+"Straits Times", "Egypt Today", "TRT World", "Russia Today", "Global Times", "21st Century Wire", "American Free Press"]
+file_counter = [-1] * len(news_sites)
+csv_files = [[]] * len(news_sites)
 
+for current_news_site in range(len(news_sites)):
+    filename = news_sites[current_news_site]
+    with open(filename, 'w') as file: 
+        csvwriter = csv.writer(file) 
+        csvwriter.writerow(headers) 
 
 #Skim Articles
 def read_articles(urls):
@@ -152,26 +159,56 @@ def read_articles(urls):
             for i in text:
                 article += i.text
 
-
             date = soup.find("time").get_text()[:10]
 
+        elif(url[1] == "Times of India"):
+            r = requests.get(url[0], headers={'User-Agent': 'Mozilla/5.0'})
+            soup = BeautifulSoup(r.content, "html.parser")
+
+            file_index = 5
+            file_counter[file_index] += 1
+
+            headline = soup.find("h1").get_text()
+
+            date_author = soup.select('div[class*="byline"]')[0].get_text().split("|")
+            if(len(date_author) < 2): #this runs if the date/author is split by /
+                date_author = date_author[0].split("/")
+
+            author = date_author[0]
+            date_index = 1
+            if (len(date_author) > 2):
+                date_index = 2
+            try:
+                if ("Updated" in date_author[date_index]):
+                    date_split = date_author[date_index].split(":")
+                    date = date_split[1][:-4].lstrip()
+                else:
+                    date_split = date_author[date_index].split(":")
+                    date = date_split[0][:-4].lstrip()
+            except:
+                date = "No Date"
+
+            try:
+                article = soup.find("div", {"class": "ga-headlines"}).get_text()
+            except:
+                try:
+                    article = soup.find("div", {"class": "Normal"}).get_text()
+                except:
+                    continue
             
-
         csv_values = [" ".join(headline.split()), " ".join(article.split()), " ".join(author.split()), url[2], "".join(url[0]), "".join(date), url[3]]
-        filename = "ScrappedArticles/{}{}.csv".format(url[1], file_counter[file_index])
+        filename = news_sites[file_index]
 
-        print("Writing: {}".format(filename))
-
-        with open(filename, 'w') as file: 
+        with open(filename, 'a') as file: 
             csvwriter = csv.writer(file) 
-            csvwriter.writerow(headers) 
             csvwriter.writerow(csv_values)
+
 
 urls = []
 
 for keyword in keywords:
 
-    """#############################################################################################
+    #############################################################################################
     #                                  Ceasefire                                                #
     #############################################################################################
     print("Scanning Ceasefire for {}".format(keyword))
@@ -285,7 +322,7 @@ for keyword in keywords:
                 url = [url_text, "British Broadcasting Company", keyword, "bbc.co.uk"]
                 if url not in urls:
                     changed = 1
-                    urls.append(url)"""
+                    urls.append(url)
     
     #############################################################################################
     #                                 France 24                                                 #
@@ -329,11 +366,73 @@ for keyword in keywords:
             if ("2020" in i.text):
                 url_text = "https://www.france24.com{}".format(i.find("a").get("href"))
                 if "tv-shows" not in url_text and "video" not in url_text:
-                    urls.append(["https://www.france24.com{}".format(i.find("a").get("href")), "France 24", keyword, "france24.com"])
+                    urls.append([url_text, "France 24", keyword, "france24.com"])
                 changed = 1
 
 
+    #############################################################################################
+    #                                 Times of India                                            #
+    #   Notes:  This new site does not have search, Instead I used the corona virus, climate,   #
+    #            and war tags                                                                   #
+    #############################################################################################
+    print("Scanning Times of India for {}".format(keyword))
 
+    page = 0
+    changed = 1
+    while (changed):
+        page += 1
+        changed = 0
+        web_addresses = []
+        
+        if (keyword == "Climate Change"):
+            web_addresses.append("https://timesofindia.indiatimes.com/topic/climate-change/{}".format(page))
+        elif (keyword == "COVID 19"):
+            if (page > 1):
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/{}".format(page))
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/delhi/{}".format(page))
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/bangalore/{}".format(page))
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/hyderabad/{}".format(page))
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/kolkata/{}".format(page))
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/mumbai/{}".format(page))
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/world/{}".format(page))
+            else:
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/")
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/delhi/")
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/bangalore/")
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/hyderabad/")
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/kolkata/")
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/mumbai/")
+                web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/world/")
+        elif (keyword == "Military Ground Vehicles"):
+            web_addresses.append("https://timesofindia.indiatimes.com/topic/Military-Ground-Vehicles/{}".format(page))
+
+
+        for web_address in web_addresses:
+            print(web_address)
+            r = requests.get(web_address)
+            soup = BeautifulSoup(r.content, "html.parser")
+
+            if (keyword != "COVID 19"):
+                article_containers = soup.find_all("li", {"class": "article"})
+            else:
+                article_containers = soup.find("ul", {"class": "list5 clearfix"}).find_all("span", {"class": "w_tle"})
+
+            for i in article_containers:
+                if (keyword == "COVID 19"):
+                    url_text = "https://timesofindia.indiatimes.com{}".format(i.find("a").get("href"))
+                    url = [url_text, "Times of India", keyword, "timesofindia.indiatimes.com"]
+                    if url not in urls:
+                        urls.append(url)
+                        changed = 1
+                else:
+                    if ("2020" in i.text):
+                        url_text = "https://timesofindia.indiatimes.com{}".format(i.find("a").get("href"))
+                        url = [url_text, "Times of India", keyword, "timesofindia.indiatimes.com"]
+                        if url not in urls:
+                            urls.append(url)
+                            changed = 1
+    
+    
 
 read_articles(urls)
 
