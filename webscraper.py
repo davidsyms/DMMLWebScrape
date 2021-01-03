@@ -9,19 +9,19 @@ import csv
 headers = ["Headline", "Body", "Author", "Topic label", "URL of the news article", "Published date", "Domain"]
 keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
 
-#Used to create number on file name
 news_sites = ["Ceasefire", "Canadian Dimension", "Al Jazeera", "British Broadcasting Company", "Taipei Times", "France 24", "Times of India",
 "Straits Times", "Egypt Today", "TRT World", "Russia Today", "Global Times", "21st Century Wire", "American Free Press"]
-file_counter = [-1] * len(news_sites)
-csv_files = [[]] * len(news_sites)
 
+file_counter = [-1] * len(news_sites)
+
+#Writes headers to all files
 for current_news_site in range(len(news_sites)):
     filename = news_sites[current_news_site]
     with open(filename, 'w') as file: 
         csvwriter = csv.writer(file) 
         csvwriter.writerow(headers) 
 
-#Skim Articles
+#Scape Articles and pulls headline, author, date, and the article
 def read_articles(urls):
     file_index = -1
 
@@ -34,14 +34,15 @@ def read_articles(urls):
             file_index = 0
             file_counter[file_index] += 1
             
-            headline = soup.find("h1", {"itemprop": "name headline"}).get_text()
+            headline = soup.find("h1", {"itemprop": "name headline"}).get_text() #Gets headline
 
             #Removes all children div's this included the extra links at bottom of article 
             textdiv = soup.find("div", {"id": "entry"})
             for remove in textdiv.find_all("div"):
                 remove.decompose()
+           
+            #Gets Article
             text = textdiv.find_all("p")
-
             article = ""
             for i in text[1:]:
                 article += i.get_text()
@@ -111,7 +112,7 @@ def read_articles(urls):
             r = requests.get(url[0])
             soup = BeautifulSoup(r.content, "html.parser")
 
-            #from search can not tell if text based news or video. If a url fails any of these tests it is a news video
+            #from search can not tell if text based news or video. If a url fails any of these tests it is a news video and isnt scrapped
             try:
                 file_index = 3
                 file_counter[file_index] += 1
@@ -170,24 +171,31 @@ def read_articles(urls):
 
             headline = soup.find("h1").get_text()
 
+            #The date/author line varried by artcile by always had "byline" in the class this finds that line.
+            #In said line the date and author was sometimes seperated by a "|" or "/" this splits the line regardless
             date_author = soup.select('div[class*="byline"]')[0].get_text().split("|")
             if(len(date_author) < 2): #this runs if the date/author is split by /
                 date_author = date_author[0].split("/")
 
+            #Author always comes first
             author = date_author[0]
+
+            #by default assume date is second elment in split array. 
+            #However, sometimes there is a second news source in which case the date index is updated
             date_index = 1
             if (len(date_author) > 2):
                 date_index = 2
             try:
                 if ("Updated" in date_author[date_index]):
                     date_split = date_author[date_index].split(":")
-                    date = date_split[1][:-4].lstrip()
+                    date = date_split[1][:-4].lstrip() #isolated actual date
                 else:
                     date_split = date_author[date_index].split(":")
                     date = date_split[0][:-4].lstrip()
             except:
                 date = "No Date"
 
+            #Article saved under two different tags depending on artcile 
             try:
                 article = soup.find("div", {"class": "ga-headlines"}).get_text()
             except:
@@ -196,9 +204,11 @@ def read_articles(urls):
                 except:
                     continue
             
+        #Combines all values into one list for csv writing 
         csv_values = [" ".join(headline.split()), " ".join(article.split()), " ".join(author.split()), url[2], "".join(url[0]), "".join(date), url[3]]
         filename = news_sites[file_index]
 
+        #Writes to csv
         with open(filename, 'a') as file: 
             csvwriter = csv.writer(file) 
             csvwriter.writerow(csv_values)
@@ -232,6 +242,7 @@ for keyword in keywords:
     #############################################################################################
     print("Scanning Canadian Dimension for {}".format(keyword))
 
+    #There are multiple pages on this site, these variables are used to iterate through the pages
     web_address = ""
     page = 0
     changed = 1
@@ -302,7 +313,6 @@ for keyword in keywords:
         changed = 0
 
         r = requests.get("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))      
-        print("https://www.bbc.co.uk/search?q={}&page={}".format(keyword, page).replace(" ", "%20"))  
         soup = BeautifulSoup(r.content, "html.parser")
 
         #Handles cases where there are no articles on page 
@@ -372,8 +382,7 @@ for keyword in keywords:
 
     #############################################################################################
     #                                 Times of India                                            #
-    #   Notes:  This new site does not have search, Instead I used the corona virus, climate,   #
-    #            and war tags                                                                   #
+    #   Notes:  Covid pages on this site are formated differently than regular searches         #
     #############################################################################################
     print("Scanning Times of India for {}".format(keyword))
 
@@ -386,6 +395,8 @@ for keyword in keywords:
         
         if (keyword == "Climate Change"):
             web_addresses.append("https://timesofindia.indiatimes.com/topic/climate-change/{}".format(page))
+
+        #Times of india has a covid landing page and multiple subpages per location. This is all the sublocations 
         elif (keyword == "COVID 19"):
             if (page > 1):
                 web_addresses.append("https://timesofindia.indiatimes.com/coronavirus/india/{}".format(page))
