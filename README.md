@@ -1,6 +1,6 @@
 # DMMLWebScrape
 
------------------------------Current Issues-----------------------------
+-----------------------------Current Issues-----------------------------\n
 I am currently having difficulty in the implimentation for:
 Taipei Times: https://www.taipeitimes.com
 Straits Times: https://www.straitstimes.com/global
@@ -15,7 +15,7 @@ Due to the fact that these pages use javascript to update pages with the next ne
 In other words instead of going to newssite.com/search/page1 to newssite.com/search/page2 it just updates newssite.com/search/.
 I do not know how to crawl these pages to find all relevant news articles.
 
------------------------------Implimentation-----------------------------
+-----------------------------Implimentation-----------------------------\n
 To complete this task my program is split into two portions:
 1. Scrape the URLs
 2. Scrape the articles and write CSV files
@@ -23,7 +23,7 @@ To complete this task my program is split into two portions:
 The URL Scraping occurs in the "for keyword in keywords" portion of the program.
 The article scraping and csv writing occur in the read_articles method.
 
------------------------------Add Additional Sites-----------------------------
+-----------------------------Add Additional Sites-----------------------------\n
 To add additional sites that follow the newssite.com/search/page1 to newssite.com/search/page2 format:
 1. Identify what in the URL changes for each new page. 
 2. Identify the container that has all the articles
