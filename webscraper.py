@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
+from selenium import webdriver
 import requests
 import csv
+import time
 
 #############################################################################################
 #                               Global Variable Declarations                                #
@@ -11,6 +13,9 @@ keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
 
 news_sites = ["Ceasefire", "Canadian Dimension", "Al Jazeera", "British Broadcasting Company", "Taipei Times", "France 24", "Times of India",
 "Straits Times", "Egypt Today", "TRT World", "Russia Today", "Global Times", "21st Century Wire", "American Free Press"]
+
+#This will vary on your system / internet speed. Increase if not recieving all results from dynamic pages.
+selenium_sleep_time = 3
 
 file_counter = [-1] * len(news_sites)
 
@@ -131,6 +136,22 @@ def read_articles(urls):
 
             except:
                 continue
+        
+        elif (url[1] == "Taipei Times"):
+            r = requests.get(url)
+            soup = BeautifulSoup(r.content, "html.parser")
+            headline, article, author, date = "", "", "", ""
+
+            headline = soup.find("div", {"class": "archives"}).find("h1").get_text()
+
+            article = ""
+            text = soup.find("div", {"class": "archives"}).find_all("p")
+            for i in text:
+                article += i.get_text()
+            
+            author = soup.find("ul", {"class": "as boxTitle boxText"}).get_text().split("/")[0].replace("By", "")
+
+            date = soup.find("h6").get_text().split("page")[0]
 
         elif (url[1] == "France 24"):
             r = requests.get(url[0], headers={'User-Agent': 'Mozilla/5.0'})
@@ -333,7 +354,36 @@ for keyword in keywords:
                 if url not in urls:
                     changed = 1
                     urls.append(url)
-    
+
+    #############################################################################################
+    #                                 Taipei Times                                              #
+    #   Notes:  This site requires the implimentation of selenium, I use firefox.               #
+    #############################################################################################
+
+    url_link = "https://www.taipeitimes.com/News/list?section=all&reportrange=January%201,%202020%20-%20December%2031,%202020&keywords={}".format(keyword)
+
+    driver = webdriver.Firefox()
+
+    # get web page
+    driver.get(url_link)
+    # execute script to scroll down the page
+    while (1):
+        page_height = driver.execute_script("return document.body.scrollHeight")
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+        # sleep for 30s
+        time.sleep(3)
+        if (driver.execute_script("return document.body.scrollHeight") == page_height):
+            break
+
+    page_source = driver.page_source
+
+    driver.quit()
+
+    soup = BeautifulSoup(page_source, "html.parser")
+
+    for article in soup.find_all("a", {"class": "tit"}):
+        urls.append([article.get("href"), "Taipei Times", keyword, "taipeitimes.com")
+
     #############################################################################################
     #                                 France 24                                                 #
     #   Notes:  This new site does not have search, Instead I used the corona virus, climate,   #
