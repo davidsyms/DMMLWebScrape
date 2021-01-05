@@ -10,14 +10,15 @@ import time
 
 headers = ["Headline", "Body", "Author", "Topic label", "URL of the news article", "Published date", "Domain"]
 keywords = ["Climate Change", "COVID 19", "Military Ground Vehicles"]
+keywords = ["Climate Change"]
 
 news_sites = ["Ceasefire", "Canadian Dimension", "Al Jazeera", "British Broadcasting Company", "Taipei Times", "France 24", "Times of India",
 "Straits Times", "Egypt Today", "TRT World", "Russia Today", "Global Times", "21st Century Wire", "American Free Press"]
 
-#This will vary on your system / internet speed. Increase if not recieving all results from dynamic pages.
-selenium_sleep_time = 3
+#This will vary on your system / internet speed and website. Increase if not recieving all results from dynamic pages.
+selenium_sleep_time = 0
+driver = webdriver.Firefox()
 
-file_counter = [-1] * len(news_sites)
 
 #Writes headers to all files
 for current_news_site in range(len(news_sites)):
@@ -37,7 +38,6 @@ def read_articles(urls):
 
         if (url[1] == "Ceasefire"):
             file_index = 0
-            file_counter[file_index] += 1
             
             headline = soup.find("h1", {"itemprop": "name headline"}).get_text() #Gets headline
 
@@ -61,7 +61,6 @@ def read_articles(urls):
     
         elif (url[1] == "Canadian Dimension"):
             file_index = 1
-            file_counter[file_index] += 1
 
             headline = soup.find("h1", {"class": "article-title"}).get_text()
 
@@ -85,7 +84,6 @@ def read_articles(urls):
 
         elif (url[1] == "Al Jazeera"):
             file_index = 2
-            file_counter[file_index] += 1
             
             headline = soup.find("h1").get_text()
 
@@ -120,7 +118,6 @@ def read_articles(urls):
             #from search can not tell if text based news or video. If a url fails any of these tests it is a news video and isnt scrapped
             try:
                 file_index = 3
-                file_counter[file_index] += 1
 
                 headline = soup.find("h1", {"id": "main-heading"}).get_text()
 
@@ -138,8 +135,9 @@ def read_articles(urls):
                 continue
         
         elif (url[1] == "Taipei Times"):
-            r = requests.get(url)
-            soup = BeautifulSoup(r.content, "html.parser")
+            file_index = 4
+
+            print("Scrapping: {}".format(url[0]))
             headline, article, author, date = "", "", "", ""
 
             headline = soup.find("div", {"class": "archives"}).find("h1").get_text()
@@ -157,8 +155,7 @@ def read_articles(urls):
             r = requests.get(url[0], headers={'User-Agent': 'Mozilla/5.0'})
             soup = BeautifulSoup(r.content, "html.parser")
 
-            file_index = 4
-            file_counter[file_index] += 1
+            file_index = 5
 
             headline = soup.find("h1", {"class": "t-content__title a-page-title"}).get_text()
 
@@ -187,8 +184,7 @@ def read_articles(urls):
             r = requests.get(url[0], headers={'User-Agent': 'Mozilla/5.0'})
             soup = BeautifulSoup(r.content, "html.parser")
 
-            file_index = 5
-            file_counter[file_index] += 1
+            file_index = 6
 
             headline = soup.find("h1").get_text()
 
@@ -239,7 +235,7 @@ urls = []
 
 for keyword in keywords:
 
-    #############################################################################################
+    """#############################################################################################
     #                                  Ceasefire                                                #
     #############################################################################################
     print("Scanning Ceasefire for {}".format(keyword))
@@ -353,7 +349,7 @@ for keyword in keywords:
                 url = [url_text, "British Broadcasting Company", keyword, "bbc.co.uk"]
                 if url not in urls:
                     changed = 1
-                    urls.append(url)
+                    urls.append(url)"""
 
     #############################################################################################
     #                                 Taipei Times                                              #
@@ -361,8 +357,7 @@ for keyword in keywords:
     #############################################################################################
 
     url_link = "https://www.taipeitimes.com/News/list?section=all&reportrange=January%201,%202020%20-%20December%2031,%202020&keywords={}".format(keyword)
-
-    driver = webdriver.Firefox()
+    selenium_sleep_time = 3
 
     # get web page
     driver.get(url_link)
@@ -370,8 +365,7 @@ for keyword in keywords:
     while (1):
         page_height = driver.execute_script("return document.body.scrollHeight")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-        # sleep for 30s
-        time.sleep(3)
+        time.sleep(selenium_sleep_time)
         if (driver.execute_script("return document.body.scrollHeight") == page_height):
             break
 
@@ -382,9 +376,9 @@ for keyword in keywords:
     soup = BeautifulSoup(page_source, "html.parser")
 
     for article in soup.find_all("a", {"class": "tit"}):
-        urls.append([article.get("href"), "Taipei Times", keyword, "taipeitimes.com")
+        urls.append([article.get("href"), "Taipei Times", keyword, "taipeitimes.com"])
 
-    #############################################################################################
+    """#############################################################################################
     #                                 France 24                                                 #
     #   Notes:  This new site does not have search, Instead I used the corona virus, climate,   #
     #            and war tags                                                                   #
@@ -492,10 +486,35 @@ for keyword in keywords:
                         if url not in urls:
                             urls.append(url)
                             changed = 1
-    
-    
 
-read_articles(urls)
+    #############################################################################################
+    #                                   Straits Times                                           #
+    #   Notes:  This site requires the implimentation of selenium, I use firefox.               #
+    #############################################################################################
+    url_link = "https://www.straitstimes.com/search?searchkey={}".format(keyword)
+
+    driver.get(url_link)
+
+    while (1):
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        if ("2020" in soup.get_text()):
+            article_containers = soup.find_all("div", {"class", "queryly_item_row"})
+            for article in article_containers:
+                if ("2020" in article.get_text()):
+                    urls.append(article.find("a").get("href"))
+        elif (soup.find("2021")):
+            pass
+        else:
+            break
+
+        try:
+            driver.find_element_by_css_selector('#resultdata > a:nth-child(22)').click()
+        except:
+            break
+    
+    driver.quit()"""
+
+    read_articles(urls)
 
 
 
