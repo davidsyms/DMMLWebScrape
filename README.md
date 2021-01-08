@@ -1,13 +1,7 @@
 # DMMLWebScrape
 
------------------------------Current Issues-----------------------------
+-----------------------------TO ADD-----------------------------
 
-
-I am currently having difficulty in the implimentation for:
-
-Taipei Times: https://www.taipeitimes.com
-
-Straits Times: https://www.straitstimes.com/global
 
 Egypt Today: https://www.egypttoday.com
 
@@ -19,12 +13,7 @@ Global Times: http://www.globaltimes.cn
 
 21st Century Wire: https://21stcenturywire.com
 
-
-Due to the fact that these pages use javascript to update pages with the next new articles instead of loading a new page.
-
-In other words instead of going to newssite.com/search/page1 to newssite.com/search/page2 it just updates newssite.com/search/.
-
-I do not know how to crawl these pages to find all relevant news articles.
+American Free Press: https://americanfreepress.net
 
 
 -----------------------------Implimentation-----------------------------
@@ -56,6 +45,3 @@ To add additional sites that follow the newssite.com/search/page1 to newssite.co
 
 For a good example of implimentation of a new site see the implimentation for Canadian Dimension. 
 
------------------------------TO ADD-----------------------------
-
-American Free Press: https://americanfreepress.net
